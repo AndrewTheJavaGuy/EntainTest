@@ -85,7 +85,7 @@ func (r *racesRepo) applyFilter(query string, filter *racing.ListRacesRequestFil
 	}
 
 	if filter.Sort != nil {
-		order_by = add_order(order_by,"advertised_start_time",filter.Sort.AdvertisedStartTime)
+		order_by = Add_order(order_by,"advertised_start_time",filter.Sort.AdvertisedStartTime)
 	}
 
 	if len(clauses) != 0 {
@@ -100,11 +100,17 @@ func (r *racesRepo) applyFilter(query string, filter *racing.ListRacesRequestFil
 }
 
 // If there's a asc or desc set, then add the value to the order by otherwise do nothing
-func add_order(order_by []string,field string,order string)([]string) {
+func Add_order(order_by []string,field string,order string)([]string) {
+
+	if len(field) == 0 || len(order) == 0 {
+		return order_by
+	}
+
 	if order == "asc" || order == "desc" {
 		order_by = append(order_by,field+" "+order)
 	}
-	return order_by;
+
+	return order_by
 }
 
 func (m *racesRepo) scanRaces(
