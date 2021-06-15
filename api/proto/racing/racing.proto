@@ -27,7 +27,10 @@ message ListRacesResponse {
 
 // Filter for listing races.
 message ListRacesRequestFilter {
+  // Return results based off the Race Meeting Identifiers (Optional)
   repeated int64 meeting_ids = 1;
+  // Only return races marked as visible
+  bool only_visible = 2;
 }
 
 /* Resources */
