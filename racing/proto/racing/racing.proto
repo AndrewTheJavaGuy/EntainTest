@@ -47,6 +47,8 @@ message Race {
   bool visible = 5;
   // AdvertisedStartTime is the time the race is advertised to run.
   google.protobuf.Timestamp advertised_start_time = 6;
+  // Status
+  string status = 7;
 }
 
 // Allow sorting on custom fields. Takes asc for Ascending, desc for descending
