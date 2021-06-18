@@ -117,3 +117,21 @@ func TestListBadOrder(t *testing.T) {
 	}
 }
 
+func TestOnlyVisibleAppears(t *testing.T) {
+	request := new(racing.ListRacesRequestFilter)
+	request.OnlyVisible = true
+
+	races,_ := racesRepo.List(request)
+
+	if len(races) == 0 {
+		t.Fatal("Expected to get some results back")
+	}
+
+	for _, race := range races {
+		if !race.GetVisible() {
+			t.Fatal("Found a non-visible status when this should be only visible")
+		}
+	}
+
+}
+
