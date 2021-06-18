@@ -135,3 +135,22 @@ func TestOnlyVisibleAppears(t *testing.T) {
 
 }
 
+func TestOpenAndClosedStatus(t *testing.T) {
+	request := new(racing.ListRacesRequestFilter)
+
+	races,returnError := racesRepo.List(request)
+
+	if returnError != nil {
+		t.Fatal("Got an error back when not expected",returnError)
+	}
+
+	for _, race := range races {
+		if race.GetStatus() != "OPEN" && race.GetStatus() != "CLOSED" {
+			t.Fatal("Got an unexpected status back",race.GetStatus())
+		}
+	}
+
+}
+
+
+
