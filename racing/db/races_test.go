@@ -1,0 +1,73 @@
+package db_test
+
+import (
+	"database/sql"
+	"git.neds.sh/matty/entain/racing/db"
+	"git.neds.sh/matty/entain/racing/proto/racing"
+	log "github.com/sirupsen/logrus"
+	"os"
+	"testing"
+)
+
+var racesRepo db.RacesRepo
+
+func TestMain(m *testing.M) {
+
+	racingDB, err := sql.Open("sqlite3", ":memory:")
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	racesRepo = db.NewRacesRepo(racingDB)
+	if err := racesRepo.Init(); err != nil {
+		log.Fatal(err)
+	}
+
+	code := m.Run()
+	racingDB.Close()
+	os.Exit(code)
+}
+
+
+func TestEmptyFilter(t *testing.T) {
+	request := new(racing.ListRacesRequestFilter)
+
+	races,_ := racesRepo.List(request)
+
+	if len(races) == 0 {
+		t.Fatal("Expected to get some results back")
+	}
+}
+
+func TestSingleIdFilter(t *testing.T) {
+	request := new(racing.ListRacesRequestFilter)
+	request.MeetingIds = append(request.MeetingIds, 1)
+
+	races,_ := racesRepo.List(request)
+
+	if len(races) == 0 {
+		t.Fatal("Expected to get some results back")
+	}
+}
+
+func TestActiveList(t *testing.T) {
+	request := new(racing.ListRacesRequestFilter)
+	request.OnlyVisible = true
+
+	races,_ := racesRepo.List(request)
+
+	if len(races) == 0 {
+		t.Fatal("Expected to get some results back")
+	}
+}
+
+func TestInActiveList(t *testing.T) {
+	request := new(racing.ListRacesRequestFilter)
+	request.OnlyVisible = false
+
+	races,_ := racesRepo.List(request)
+
+	if len(races) == 0 {
+		t.Fatal("Expected to get some results back")
+	}
+}
