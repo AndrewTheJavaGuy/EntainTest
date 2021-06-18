@@ -2,8 +2,12 @@ package db
 
 import (
 	"database/sql"
+	"errors"
+	"fmt"
 	"github.com/golang/protobuf/ptypes"
 	_ "github.com/mattn/go-sqlite3"
+	log "github.com/sirupsen/logrus"
+	"strconv"
 	"strings"
 	"sync"
 	"time"
@@ -18,6 +22,7 @@ type RacesRepo interface {
 
 	// List will return a list of races.
 	List(filter *racing.ListRacesRequestFilter) ([]*racing.Race, error)
+	Get(filter *racing.GetRaceRequest) (*racing.Race, error)
 }
 
 type racesRepo struct {
@@ -40,6 +45,33 @@ func (r *racesRepo) Init() error {
 	})
 
 	return err
+}
+
+func (r *racesRepo) Get(getRace *racing.GetRaceRequest) (*racing.Race, error) {
+	var intId,intErr = strconv.ParseInt(getRace.RaceId,10,64)
+
+	if intErr != nil {
+		log.Warn("An error occurred with the Race ID passed: ",intErr)
+		return nil,intErr
+	}
+
+	var racingFilter = new(racing.ListRacesRequestFilter)
+	racingFilter.RaceId = intId;
+
+	races, err := r.List(racingFilter)
+
+	if len(races) == 0 {
+		err = errors.New(fmt.Sprintf("No races found against %v",intId))
+		return nil,err
+	}
+
+	if len(races) > 1 {
+		err = errors.New(fmt.Sprintf("Multiple races found against %v",intId))
+		log.Warn(fmt.Sprint(err.Error()," Only 1 row was expected back so this points to a larger error int the data"));
+		return nil,err;
+	}
+
+	return races[0],nil;
 }
 
 func (r *racesRepo) List(filter *racing.ListRacesRequestFilter) ([]*racing.Race, error) {
@@ -70,6 +102,10 @@ func (r *racesRepo) applyFilter(query string, filter *racing.ListRacesRequestFil
 
 	if filter == nil {
 		return query, args
+	}
+
+	if filter.RaceId != 0 {
+		clauses = append(clauses, fmt.Sprintf("id = %v",filter.RaceId))
 	}
 
 	if len(filter.MeetingIds) > 0 {
