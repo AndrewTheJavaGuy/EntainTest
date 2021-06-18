@@ -132,6 +132,65 @@ func TestOnlyVisibleAppears(t *testing.T) {
 			t.Fatal("Found a non-visible status when this should be only visible")
 		}
 	}
+}
 
+func TestNoItemAppearsOnGet(t *testing.T) {
+	request := new(racing.GetRaceRequest)
+	request.RaceId = "-1"
+
+	race,returnError := racesRepo.Get(request)
+
+	if (race != nil) {
+		t.Fatal("Got a result back when not expected",race.GetId())
+	}
+
+	if returnError == nil {
+		t.Fatal("Did not get an error back as expected")
+	}
+}
+
+func TestBadIdPassedOnGet(t *testing.T) {
+	request := new(racing.GetRaceRequest)
+	request.RaceId = "NotANumber"
+
+	race,returnError := racesRepo.Get(request)
+
+	if (race != nil) {
+		t.Fatal("Got a result back when not expected",race.GetId())
+	}
+
+	if returnError == nil {
+		t.Fatal("Did not get an error back as expected")
+	}
+}
+
+func TestNoIdPassedOnGet(t *testing.T) {
+	request := new(racing.GetRaceRequest)
+	request.RaceId = ""
+
+	race,returnError := racesRepo.Get(request)
+
+	if (race != nil) {
+		t.Fatal("Got a result back when not expected",race.GetId())
+	}
+
+	if returnError == nil {
+		t.Fatal("Did not get an error back as expected")
+	}
+}
+
+func TestRecordReturnedOnGet(t *testing.T) {
+	request := new(racing.GetRaceRequest)
+	request.RaceId = "1"
+
+	race,returnError := racesRepo.Get(request)
+
+	if returnError != nil {
+		t.Fatal("Got an error back when one was not expected",returnError)
+	}
+
+	if (race == nil) {
+		t.Fatal("Got a result back when not expected",race.GetId())
+	}
 }
 
