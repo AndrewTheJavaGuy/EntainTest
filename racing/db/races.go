@@ -129,7 +129,7 @@ func (r *racesRepo) applyFilter(query string, filter *racing.ListRacesRequestFil
 	}
 
 	if (len(order_by) != 0) {
-		query += " ORDER BY " + strings.Join(order_by, " AND ")
+		query += " ORDER BY " + strings.Join(order_by, ", ")
 	}
 
 	return query, args
