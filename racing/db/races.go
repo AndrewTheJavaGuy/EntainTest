@@ -64,6 +64,7 @@ func (r *racesRepo) List(filter *racing.ListRacesRequestFilter) ([]*racing.Race,
 func (r *racesRepo) applyFilter(query string, filter *racing.ListRacesRequestFilter) (string, []interface{}) {
 	var (
 		clauses []string
+		order_by   []string
 		args    []interface{}
 	)
 
@@ -79,11 +80,37 @@ func (r *racesRepo) applyFilter(query string, filter *racing.ListRacesRequestFil
 		}
 	}
 
+	if filter.OnlyVisible {
+		clauses = append(clauses, "visible = true")
+	}
+
+	if filter.Sort != nil {
+		order_by = Add_order(order_by,"advertised_start_time",filter.Sort.AdvertisedStartTime)
+	}
+
 	if len(clauses) != 0 {
 		query += " WHERE " + strings.Join(clauses, " AND ")
 	}
 
+	if (len(order_by) != 0) {
+		query += " ORDER BY " + strings.Join(order_by, ", ")
+	}
+
 	return query, args
+}
+
+// If there's a asc or desc set, then add the value to the order by otherwise do nothing
+func Add_order(order_by []string,field string,order string)([]string) {
+
+	if len(field) == 0 || len(order) == 0 {
+		return order_by
+	}
+
+	if order == "asc" || order == "desc" {
+		order_by = append(order_by,field+" "+order)
+	}
+
+	return order_by
 }
 
 func (m *racesRepo) scanRaces(

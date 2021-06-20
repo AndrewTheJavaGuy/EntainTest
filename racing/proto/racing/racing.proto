@@ -23,7 +23,12 @@ message ListRacesResponse {
 
 // Filter for listing races.
 message ListRacesRequestFilter {
+  // Return results based off the Race Meeting Identifiers (Optional)
   repeated int64 meeting_ids = 1;
+  // Only return races marked as visible
+  bool only_visible = 2;
+  // Sort on returned fields
+  Sort sort = 3;
 }
 
 /* Resources */
@@ -44,3 +49,10 @@ message Race {
   google.protobuf.Timestamp advertised_start_time = 6;
 }
 
+// Allow sorting on custom fields. Takes asc for Ascending, desc for descending
+// Sorts in the order passed (1st field populated, 2nd field populated, etc)
+// When adding new fields, make sure they match values and order returned in the response
+message Sort {
+  // Sort by Advertised Start Time
+  string advertised_start_time = 1;
+}
