@@ -2,8 +2,12 @@ package db
 
 import (
 	"database/sql"
+	"errors"
+	"fmt"
 	"github.com/golang/protobuf/ptypes"
 	_ "github.com/mattn/go-sqlite3"
+	log "github.com/sirupsen/logrus"
+	"strconv"
 	"strings"
 	"sync"
 	"time"
@@ -18,6 +22,7 @@ type RacesRepo interface {
 
 	// List will return a list of races.
 	List(filter *racing.ListRacesRequestFilter) ([]*racing.Race, error)
+	Get(filter *racing.GetRaceRequest) (*racing.Race, error)
 }
 
 type racesRepo struct {
@@ -42,6 +47,33 @@ func (r *racesRepo) Init() error {
 	return err
 }
 
+func (r *racesRepo) Get(getRace *racing.GetRaceRequest) (*racing.Race, error) {
+	var intId,intErr = strconv.ParseInt(getRace.RaceId,10,64)
+
+	if intErr != nil {
+		log.Warn("An error occurred with the Race ID passed: ",intErr)
+		return nil,intErr
+	}
+
+	var racingFilter = new(racing.ListRacesRequestFilter)
+	racingFilter.RaceId = intId;
+
+	races, err := r.List(racingFilter)
+
+	if len(races) == 0 {
+		err = errors.New(fmt.Sprintf("No races found against %v",intId))
+		return nil,err
+	}
+
+	if len(races) > 1 {
+		err = errors.New(fmt.Sprintf("Multiple races found against %v",intId))
+		log.Warn(fmt.Sprint(err.Error()," Only 1 row was expected back so this points to a larger error int the data"));
+		return nil,err;
+	}
+
+	return races[0],nil;
+}
+
 func (r *racesRepo) List(filter *racing.ListRacesRequestFilter) ([]*racing.Race, error) {
 	var (
 		err   error
@@ -64,11 +96,16 @@ func (r *racesRepo) List(filter *racing.ListRacesRequestFilter) ([]*racing.Race,
 func (r *racesRepo) applyFilter(query string, filter *racing.ListRacesRequestFilter) (string, []interface{}) {
 	var (
 		clauses []string
+		order_by   []string
 		args    []interface{}
 	)
 
 	if filter == nil {
 		return query, args
+	}
+
+	if filter.RaceId != 0 {
+		clauses = append(clauses, fmt.Sprintf("id = %v",filter.RaceId))
 	}
 
 	if len(filter.MeetingIds) > 0 {
@@ -79,11 +116,37 @@ func (r *racesRepo) applyFilter(query string, filter *racing.ListRacesRequestFil
 		}
 	}
 
+	if filter.OnlyVisible {
+		clauses = append(clauses, "visible = true")
+	}
+
+	if filter.Sort != nil {
+		order_by = Add_order(order_by,"advertised_start_time",filter.Sort.AdvertisedStartTime)
+	}
+
 	if len(clauses) != 0 {
 		query += " WHERE " + strings.Join(clauses, " AND ")
 	}
 
+	if (len(order_by) != 0) {
+		query += " ORDER BY " + strings.Join(order_by, ", ")
+	}
+
 	return query, args
+}
+
+// If there's a asc or desc set, then add the value to the order by otherwise do nothing
+func Add_order(order_by []string,field string,order string)([]string) {
+
+	if len(field) == 0 || len(order) == 0 {
+		return order_by
+	}
+
+	if order == "asc" || order == "desc" {
+		order_by = append(order_by,field+" "+order)
+	}
+
+	return order_by
 }
 
 func (m *racesRepo) scanRaces(
@@ -101,6 +164,12 @@ func (m *racesRepo) scanRaces(
 			}
 
 			return nil, err
+		}
+
+		if advertisedStart.Before(time.Now()) {
+			race.Status = "CLOSED"
+		} else {
+			race.Status = "OPEN"
 		}
 
 		ts, err := ptypes.TimestampProto(advertisedStart)
