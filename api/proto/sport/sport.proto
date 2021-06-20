@@ -1,0 +1,66 @@
+syntax = "proto3";
+package sport;
+
+option go_package = "/sport";
+
+import "google/protobuf/timestamp.proto";
+import "google/api/annotations.proto";
+
+service Sport {
+  // ListRaces returns a list of all races.
+  rpc ListSports(ListSportsRequest) returns (ListSportsResponse) {
+    option (google.api.http) = { post: "/v1/list-sport", body: "*" };
+  }
+
+}
+
+/* Requests/Responses */
+
+// Request for ListSportsRequest call.
+message ListSportsRequest {
+  ListSportsFilter filter = 1;
+}
+
+// Response to ListSports call.
+message ListSportsResponse {
+  repeated SportDetails sport = 1;
+}
+
+// Filter for listing sports.
+message ListSportsFilter {
+  string sport_type = 1;
+  bool only_visible = 2;
+  Sort sort = 3;
+}
+
+/* Resources */
+
+// A sport resource.
+message SportDetails {
+  // ID represents a unique identifier for the race.
+  int64 id = 1;
+  // Sport type
+  string sport_type = 2;
+  // Name is the official name given to the race.
+  string name = 3;
+  // Additional details about the sport
+  string details = 4;
+  // Visible represents whether or not the race is visible.
+  bool visible = 5;
+  // AdvertisedStartTime is the time the race is advertised to run.
+  google.protobuf.Timestamp advertised_start_time = 6;
+  // status
+  string status = 7;
+}
+
+// Allow sorting on custom fields. Takes asc for Ascending, desc for descending
+// Sorts in the order passed (1st field populated, 2nd field populated, etc)
+// When adding new fields, make sure they match values and order returned in the response
+message Sort {
+  // Sort by Sport type (e.g. Racing, Cricket, Boxing, etc)
+  string sport_type = 1;
+  // Sort by Name (within the sport type)
+  string name = 2;
+  // Sort by Advertised Start Time
+  string advertised_start_time = 3;
+}
